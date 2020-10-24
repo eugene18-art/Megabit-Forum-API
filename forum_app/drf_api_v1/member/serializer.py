@@ -100,17 +100,3 @@ class LoginSerializer(serializers.ModelSerializer):
             if not (re.match(rfc5322, email)):
                 raise ValidationError({"email":_("Email is not valid.")})
         return data
-
-def generate_username(first_name,last_name):
-    val = "{0}{1}".format(first_name,last_name).lower().replace(" ", "")
-    if User.objects.filter(username=val).count() == 0:
-        return val
-    qs = User.objects.filter(username__regex=rf"^{val}\d+").order_by("-username")
-    counters = [int(re.search(r"\d+$", str(x)).group(0)) for x in qs]
-    if len(counters) == 0:
-        return f"{val}{0}"
-    counters.sort()
-    max_counter = counters.pop()
-    max_counter+=1
-    val = f"{val}{max_counter}"
-    return val

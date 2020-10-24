@@ -15,3 +15,12 @@ class IsAdmin(BasePermission):
     def has_permission(self, request, view):
         member = Member.objects.get(user=request.user)
         return member.types == Member.ADMIN
+
+class IsAdminOrOwner(BasePermission):
+    message = _("You must be Admin or Owner to do this.")
+    
+    def has_object_permission(self, request, view, obj):
+        member = Member.objects.get(user=request.user)
+        if (member.types == Member.ADMIN):
+            return True
+        return obj == request.user

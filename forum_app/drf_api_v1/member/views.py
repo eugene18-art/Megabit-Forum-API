@@ -1,8 +1,8 @@
+# auth
 from django.contrib.auth import get_user_model, login, logout
-
+# i18n
 from django.utils.translation import ugettext_lazy as _
 # rest_framework
-from rest_framework import exceptions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -11,21 +11,20 @@ from rest_framework.status import (
     HTTP_204_NO_CONTENT,
     HTTP_201_CREATED,
 )
+# tools
+from ..tools import generate_username, get_user_or_404
+# permission
+from rest_framework.permissions import IsAuthenticated
+from .permissions import IsOwner
+# models and serializer
+from forum_app.models import (
+    Member,
+    Post
+)
 from .serializer import (
     CreateMemberSerializer,
     ReadMemberSerializer,
     LoginSerializer,
-    generate_username
-)
-from rest_framework.permissions import IsAuthenticated
-from .permission import (
-    IsOwner,
-    IsAdmin
-)
-# models
-from forum_app.models import (
-    Member,
-    Post
 )
 # Get the JWT settings, add these lines after the import/from lines
 from datetime import datetime
@@ -73,21 +72,14 @@ class CreateMember(APIView):
         _create(serializer.validated_data)
         return Response(serializer.data, status=HTTP_201_CREATED)
 
-
-def get_user_or_404(username):
-    try:
-        query_user = User.objects.get(username=username)
-        return query_user
-    except (User.DoesNotExist):
-        raise exceptions.NotFound(detail=_("The resource you're looking for does not exists."))
-class RUMember(APIView):
-    """RU (Read Update) for member. Use get to Read, put to update"""
+class ReadUpdateDeleteMember(APIView):
+    """Use **get** to **Read**, **put** to **Update**, **delete** to **Delete**"""
     serializer_class = CreateMemberSerializer
     def get(self, request, *args, **kwargs):
         self.permission_classes = [ IsAuthenticated ]
         query_user = get_user_or_404(self.kwargs['username'])
         member = Member.objects.get(user=query_user)
-        self.check_object_permissions(request, member.user)
+        self.check_permissions(request)
 
         serializer = ReadMemberSerializer(member)
         return Response(serializer.data, status=HTTP_200_OK)
@@ -116,7 +108,7 @@ class RUMember(APIView):
             instance = Member.objects.filter(user=user).update(**validated_data)
             return instance
 
-        self.permission_classes = [ IsAuthenticated & (IsOwner|IsAdmin) ]
+        self.permission_classes = [ IsOwner ]
         query_user = get_user_or_404(self.kwargs['username'])
         member = Member.objects.get(user=query_user)
         self.check_object_permissions(request, member.user)
@@ -149,12 +141,12 @@ class Login(APIView):
             if (not user) and username:
                 user = User.objects.get(username=username)
             if not user.check_password(password):
-                return Response({"message": _("Login failed. Check your login credentials.")}, status=HTTP_400_BAD_REQUEST)
+                return Response({"detail": _("Login failed. Check your login credentials.")}, status=HTTP_400_BAD_REQUEST)
             member = Member.objects.get(user=user)
         except User.DoesNotExist:
-            return Response({"message": _("Login failed. Check your login credentials.")}, status=HTTP_400_BAD_REQUEST)
+            return Response({"detail": _("Login failed. Check your login credentials.")}, status=HTTP_400_BAD_REQUEST)
         except Member.DoesNotExist:
-            return Response({"message": _("This user does not have member credentials.")}, status=HTTP_400_BAD_REQUEST)
+            return Response({"detail": _("This user does not have member credentials.")}, status=HTTP_400_BAD_REQUEST)
         
         # user credentials valid perform authenticate
         # generate jwt token
@@ -165,24 +157,22 @@ class Login(APIView):
             "regular":[
                 {"post":{
                     "actions":[
-                        "Create", 
-                        "Read", 
-                        "Update", 
-                        "Delete"
+                        "Create:Self", 
+                        "Read:All", 
+                        "Update:Self", 
+                        "Delete:Self"
                     ],
-                    "scope": "self"
                     }
                 }
             ],
             "admin":[
                 {"post":{
                     "actions":[
-                        "Create", 
-                        "Read", 
-                        "Update", 
-                        "Delete"
+                        "Create:Self", 
+                        "Read:All", 
+                        "Update:Self", 
+                        "Delete:All"
                     ],
-                    "scope": "all"
                     }
                 }
             ],
@@ -215,8 +205,10 @@ class Login(APIView):
 class Logout(APIView):
     def get(self, request):
         """Logout the current session."""
-        response = Response({'message': 'logout successful.'})
+        
         logout(request)
+
+        response = Response({'detail': 'logout successful.'})
         if api_settings.JWT_AUTH_COOKIE:
             response.delete_cookie(api_settings.JWT_AUTH_COOKIE)
         return response

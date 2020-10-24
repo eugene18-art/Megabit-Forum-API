@@ -1,11 +1,13 @@
 from django.urls import path
 
 from .views import (
-    CreatePost
+    CreateOrListPost,
+    ReadUpdateDeletePost,
 )
 
 app_name = "post-api"
 
 urlpatterns = [
-    path("", CreatePost.as_view(), name="create-post"),
+    path("", CreateOrListPost.as_view(), name="create-or-list-post"),
+    path("<str:postid>/", ReadUpdateDeletePost.as_view(), name="rud-post"),
 ]
