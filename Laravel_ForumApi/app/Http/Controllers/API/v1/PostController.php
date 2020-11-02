@@ -3,10 +3,14 @@
 namespace App\Http\Controllers\API\v1;
 
 use App\Http\Controllers\Controller;
+use App\Models\ForumApp\Post;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+use App\Traits\Permissions;
 
 class PostController extends Controller
 {
+    use Permissions;
     /**
      * Display a listing of the resource.
      *
@@ -14,17 +18,8 @@ class PostController extends Controller
      */
     public function index()
     {
-        //
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
-    {
-        //
+        $posts = Post::all();
+        return response()->json($posts);
     }
 
     /**
@@ -35,7 +30,16 @@ class PostController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validator = Validator::make($request->all(), [
+            'content'=>'required',
+        ]);
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 400);
+        }
+        $validated_data = $validator->valid();
+        $validated_data['writer'] = $request->user()->id;
+        $post = Post::create($validated_data);
+        return response()->json($post, 201);
     }
 
     /**
@@ -46,18 +50,11 @@ class PostController extends Controller
      */
     public function show($id)
     {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function edit($id)
-    {
-        //
+        $post = Post::find($id);
+        if (is_null($post)) {
+            return response()->json(['detail'=>'Post not found.'], 404);
+        }
+        return response()->json($post, 200);
     }
 
     /**
@@ -67,9 +64,19 @@ class PostController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, Post $post)
     {
-        //
+        $validator = Validator::make($request->all(), [
+            'content'=>'required'
+        ]);
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 400);
+        }
+        $this->isOwner($request, $post->writer);
+        $validated_data = $validator->valid();
+        $post->content = $validated_data['content'];
+        $post->save();
+        return response()->json($post, 201);
     }
 
     /**
@@ -78,8 +85,10 @@ class PostController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function destroy(Request $request, Post $post)
     {
-        //
+        $this->isAdminOrOwner($request, $post->writer);
+        $post->delete();
+        return response()->json(['detail'=>'Post deleted.'], 204);
     }
 }

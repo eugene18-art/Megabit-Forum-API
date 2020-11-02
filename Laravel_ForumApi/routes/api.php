@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\API\v1\PassportAuthController;
+use App\Http\Controllers\API\v1\PostController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -20,6 +21,7 @@ Route::prefix('v1')->group(function() {
         Route::post('signin/', [PassportAuthController::class, 'signin'])->name('signin');
         Route::middleware('auth:api')->get('signout/', [PassportAuthController::class, 'signout'])->name('signout');
     });
+    Route::middleware('auth:api')->resource('posts', PostController::class);
 });
 
 

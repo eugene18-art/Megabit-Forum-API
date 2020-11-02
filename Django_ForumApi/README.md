@@ -2,7 +2,7 @@
 
 ## Installation
 
-Use the package manager [pip](https://pip.pypa.io/en/stable/) to install ForumAPI_Megabit. This project is using [Python 3](https://www.python.org/download/releases/3.0/).
+Use the package manager [pip](https://pip.pypa.io/en/stable/) to install **Django Forum API Megabit**. This project is using [Python 3](https://www.python.org/download/releases/3.0/).
 
 ```bash
 pip install -r requirements.txt
