@@ -1,7 +1,7 @@
 # auth
 from django.contrib.auth import get_user_model, login, logout
 # i18n
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext as _
 # rest_framework
 from rest_framework.views import APIView
 from rest_framework.response import Response

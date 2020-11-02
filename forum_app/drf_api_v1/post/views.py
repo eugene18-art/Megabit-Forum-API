@@ -1,5 +1,7 @@
 # i18n
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext as _
+# exceptions
+from django.core.exceptions import FieldError
 # rest_framework view
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -45,13 +47,20 @@ class CreateOrListPost(APIView):
         if page_size:
             try:
                 paginator.page_size = int(page_size)
-            except ValueError:
-                paginator.page_size = self.DEFAULT_PAGE_SIZE
+            except ValueError as err:
+                return Response(
+                    {"detail": _("You must provide number, not '{}'").format(page_size)},
+                    status=HTTP_400_BAD_REQUEST
+                )
         
         posts = Post.objects.all()
-        posts_page = paginator.paginate_queryset(posts, request)
-        serializer = self.serializer_class(posts_page, many=True)
 
+        try:
+            posts_page = paginator.paginate_queryset(posts, request)
+        except FieldError as err:
+            return Response({"detail": str(err)}, status=HTTP_400_BAD_REQUEST)
+
+        serializer = self.serializer_class(posts_page, many=True)
         return paginator.get_paginated_response(serializer.data)
 
     def post(self, request):
