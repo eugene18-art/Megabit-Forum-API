@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\API\v1\PassportAuthController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -13,7 +14,15 @@ use Illuminate\Support\Facades\Route;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
-
-Route::middleware('auth:api')->get('/user', function (Request $request) {
-    return $request->user();
+Route::prefix('v1')->group(function() {
+    Route::prefix('auth')->group(function() {
+        Route::post('signup/', [PassportAuthController::class, 'signup'])->name('signup');
+        Route::post('signin/', [PassportAuthController::class, 'signin'])->name('signin');
+        Route::middleware('auth:api')->get('signout/', [PassportAuthController::class, 'signout'])->name('signout');
+    });
 });
+
+
+// Route::middleware('auth:api')->get('/user', function (Request $request) {
+//     return $request->user();
+// });

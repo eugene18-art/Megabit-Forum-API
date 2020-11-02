@@ -8,9 +8,9 @@ from django.utils.translation import ugettext_lazy as _
 User = get_user_model()
 
 class CreateMemberSerializer(serializers.ModelSerializer):
-    first_name = serializers.CharField(source="user.first_name", max_length=150)
+    first_name = serializers.CharField(source="user.first_name", max_length=30)
     last_name = serializers.CharField(source="user.last_name", max_length=150)
-    email = serializers.CharField(source="user.email", max_length=75)
+    email = serializers.CharField(source="user.email", max_length=254)
     password = serializers.CharField(style={'input_type': 'password'}, write_only=True)
     confirm_password = serializers.CharField(style={'input_type': 'password'}, write_only=True)
     class Meta:
